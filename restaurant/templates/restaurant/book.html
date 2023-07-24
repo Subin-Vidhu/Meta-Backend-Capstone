@@ -1,0 +1,163 @@
+{% extends 'restaurant/base.html' %}
+{% load static %}
+
+{% block content %}
+  <section>
+    <article>
+      <div class="row">
+
+        <div class="column">
+          <h1>Make A Reservation</h1>
+          <form action="" method="post">
+            {% csrf_token %}
+            {{form.as_p}}
+            <input type="submit" id="button">
+          </form>
+        </div>
+
+        <div class="column">
+          <h1>Bookings for <span id="bookings-date"></span></h1>
+          <pre id="bookings"></pre>
+        </div>
+
+        <div class="column">
+          <div class="videowrap">
+            <iframe
+              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d11898.289517452584!2d-87.60853049433447!3d41.79442860243028!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x880e2912ce6f7027%3A0xc0cfb5545d4a37b2!2sHyde%20Park%2C%20Chicago%2C%20IL%2C%20USA!5e0!3m2!1sen!2spt!4v1662384760663!5m2!1sen!2spt"
+              width="600" height="450" style="border:0;" allowfullscreen="" loading="lazy"
+              referrerpolicy="no-referrer-when-downgrade"></iframe>
+          </div>
+        </div>
+
+      </div>
+    </article>
+  </section>
+
+  <script>
+    // helper functions
+    function prefixWithZero(string, numberOfZeros) {
+      var zeros = '';
+      for (let i=0; i<numberOfZeros; i++) {
+        zeros += '0';
+      }
+      return zeros + string
+    }
+
+    function formatDayOrMonth(DayOrMonthAsString) {
+      string_length = DayOrMonthAsString.length;
+      if (string_length < 2) {
+        return prefixWithZero(DayOrMonthAsString, 1);
+      }
+      return DayOrMonthAsString;
+    }
+
+    function getDateAsTuple() {
+      date = new Date();
+      return [
+        formatDayOrMonth(String(date.getDate())),
+        formatDayOrMonth(String(date.getMonth() + 1)),
+        String(date.getFullYear()),
+      ];
+    }
+
+    function getDateAsString() {
+      date = new Date();
+      var output = '';
+      output += String(date.getFullYear()) + '-';
+      output += formatDayOrMonth(String(date.getMonth() + 1)) + '-';
+      output += formatDayOrMonth(String(date.getDate()));
+      return output;
+    }
+
+    function getDateFromInput() {
+      var input_date = document.getElementById('id_booking_date').value;
+      return input_date;
+    }
+
+    function listBookingsOnPage(data) {
+      const pre = document.getElementById('bookings');
+      pre.innerHTML = '';
+
+      if (data['message'] === 'No Booking') {
+        const message = document.createTextNode('No Bookings');
+        const strong = document.createElement('strong');
+        const p = document.createElement('p');
+
+        strong.appendChild(message);
+        p.appendChild(strong);
+        pre.appendChild(p);
+      }
+      else {
+        for (let key in data) {
+          var content = ''
+          const p = document.createElement('p');
+
+          content += data[key]['name'] + ', ';
+          content += data[key]['no_of_guests'] + ' guests';
+
+          p.appendChild(document.createTextNode(content));
+          pre.appendChild(p);
+        }
+      }
+    }
+
+    function fetchBookings() {
+      const token = '{{ token }}';
+      console.log(token);
+      var query_date = getDateFromInput();
+
+      span.innerHTML = '';
+      span = document.getElementById('bookings-date');
+      span.appendChild(document.createTextNode(query_date));
+
+      // fetch bookings from the api
+      const url = `http://127.0.0.1:8000/api/bookings?date=${query_date}`
+      fetch(url, {
+          method: 'GET',
+          withCredentials: true,
+          credentials: 'include',
+          headers: {
+            'Authorization': `JWT ${token}`,
+            'Content-Type': 'application/json'
+          }
+        }
+        )
+      .then(response => response.json())
+      .then(data => {
+        listBookingsOnPage(data);
+      })
+    }
+
+    function changeButtonState() {
+      const name = document.getElementById('id_name');
+
+      const button = document.getElementById('button');
+
+      if (name.value === '') {
+        button.setAttribute('disabled', '');
+      } else {
+        button.removeAttribute('disabled');
+      }
+    }
+
+    // form
+    var date = document.getElementById('id_booking_date').type='date';
+
+    // show bookings for selected date
+    date = document.getElementById('id_booking_date');
+    date.addEventListener('input', fetchBookings);
+
+    // submit button only enable when time and name are entered
+    const name_ele = document.getElementById('id_name');
+    name_ele.addEventListener('change', changeButtonState);
+
+    // fetch bookings from api endpoint at page loading
+    var span = document.getElementById('bookings-date');
+    fetchBookings();
+
+    // on first load, disable submit button
+    changeButtonState();
+
+  </script>
+
+{% endblock %}

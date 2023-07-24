@@ -1,0 +1,25 @@
+{% extends 'restaurant/base.html' %}
+{% load static %}
+
+{% block content %}
+    <h1>Menu</h1>
+    {% if error %}
+        <div class="column">
+            <p>{{ error }} <a href="{% url 'login' %}">Login</a></p>
+        </div>
+    {% else %}
+        <div class="column">
+            {% for item in menu_items %}
+            <p>{{ item.title }}</p>
+            <p>
+                <a href="{% url 'menu-detail' pk=item.id %}">
+                    {{ item.title }}
+                    </a>
+                <span class="menu-price">
+                    ${{ item.price }}
+                </span>
+            </p>
+            {% endfor %}
+        </div>
+    {% endif %}
+{% endblock %}
